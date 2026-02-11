@@ -28,6 +28,8 @@ class AuthController {
         // Generate JWT
         $token = generateToken($user["id"], $user["email"]);
         successResponse(['token' => $token], 'Login successful', 200);
+
+        // update refresh token right away after login 
         $refreshToken = bin2hex(random_bytes(64));
         $refreshTokenHash = hash('sha256', $refreshToken);
 
@@ -41,11 +43,11 @@ class AuthController {
     'refresh_token',
     $refreshToken,
     [
-        'expires'  => time() + (60 * 60 * 24 * 7),
+        'expires'  => time() + (60 * 60 * 24 * 7), // 7 days validity 
         'path'     => '/',
         'secure'   => true,      // HTTPS required
         'httponly' => true,      // JS cannot read
-        'samesite' => 'Strict'   // or 'Lax'
+        'samesite' => 'Strict'   // restricts other site from accessing this cookie
     ]
 );
 
@@ -83,7 +85,9 @@ public function refresh(){
         'expires_in' => 900
     ], 'Refresh successful', 200);
 
-
+/* refresh token rotation once new access token
+    is issued, create new refresh token and invalidate old one
+*/
 $newRefreshToken = bin2hex(random_bytes(64));
 $newHash = hash('sha256', $newRefreshToken);
 

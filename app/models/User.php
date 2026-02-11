@@ -21,12 +21,15 @@ class User {
         return $this->getByEmail($email);
     }
 
+    // get user based on id for RBAC
     public function getById($id) {
         $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = :id");
         $stmt->execute([':id' => $id]);
         $userRole = $stmt->fetch(PDO::FETCH_ASSOC);
         return $userRole;
     }
+
+    
     public function getUserByRefreshToken($token) {
         $stmt = $this->pdo->prepare("SELECT id, email, role, refresh_token_expires_at  FROM users WHERE refresh_token = :token");
         $stmt->execute([':token' => $token]);

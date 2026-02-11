@@ -45,9 +45,9 @@ function dispatch(PDO $pdo): bool{
 
     // GET all patients
     if ($method === 'GET' && $url === '/api/patients') {
-         $role = authMiddleware(); 
+         $user = authMiddleware(); 
     
-        if($role === 'user') {
+        if($user['role'] === 'user') {
             $authController->unAuthorized();
             return true;
         }
@@ -56,16 +56,22 @@ function dispatch(PDO $pdo): bool{
     }
 
     if ($method === 'GET' && preg_match('#^/api/patients/(\d+)$#', $url, $matches)) {
-        authMiddleware();
+       $user = authMiddleware();
+    
+        if($user['role'] === 'user') {
+             $patientController->getPatientById($user['id']);
+             return true;
+        } else{
         $id = (int)$matches[1];
         $patientController->getPatientById($id);
         return true;
+        }
     }
 
     if ($method === 'POST' && $url === '/api/patients') {
-        $role = authMiddleware(); 
+        $user = authMiddleware(); 
     
-        if($role === 'user') {
+        if($user['role'] === 'user') {
             $authController->unAuthorized();
             return true;
         }
@@ -81,9 +87,9 @@ function dispatch(PDO $pdo): bool{
         return true;
     }
     if ($method === 'PUT' && preg_match('#^/api/patients/(\d+)$#', $url, $matches)) {
-         $role = authMiddleware(); 
+         $user = authMiddleware(); 
     
-        if($role === 'user') {
+        if($user['role'] === 'user') {
             $authController->unAuthorized();
             return true;
         }
@@ -93,9 +99,9 @@ function dispatch(PDO $pdo): bool{
         }
 
      if ($method === 'DELETE' && preg_match('#^/api/patients/(\d+)$#', $url, $matches)) {
-        $role = authMiddleware(); 
+        $user = authMiddleware(); 
     
-        if($role === 'user') {
+        if($user['role'] === 'user') {
             $authController->unAuthorized();
             return true;
         }

@@ -6,7 +6,7 @@ class Helper {
     public function __construct(PDO $pdo) {
         $this->userModel = new User($pdo);
     }
-    public function getRole($id) {
+    public function getRoleAndId($id) {
        $user =  $this->userModel->getById($id);
     // $user = $id;
        return $user;

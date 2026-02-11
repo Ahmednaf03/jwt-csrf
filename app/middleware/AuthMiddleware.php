@@ -44,8 +44,8 @@ function authMiddleware(){
 
     // 4. Attach user data to request
     $_REQUEST['user'] = $payload;
-    $role = $helper->getRole($payload['user_id']);
+    $user = $helper->getRoleAndId($payload['user_id']);
 
-    return $role['role'];
+    return $user;
 }
 ?>
