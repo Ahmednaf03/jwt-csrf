@@ -4,11 +4,12 @@ require_once __DIR__ . '/../middleware/authMiddleware.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/PatientController.php';
 
-function dispatch(PDO $pdo): bool
-{
+// routing function
+function dispatch(PDO $pdo): bool{
+    //capture method and body
     $method = $_SERVER['REQUEST_METHOD'];
     $body   = $_REQUEST['body'] ?? null;
-
+    // controller objects
     $authController     = new AuthController($pdo);
     $patientController = new PatientController($pdo);
 
@@ -33,15 +34,41 @@ function dispatch(PDO $pdo): bool
         $authController->register($body);
         return true;
     }
+    if ($method === 'POST' && $url === '/api/refresh') {
+    $authController->refresh();
+    return true;
+    }
 
+
+
+    // --------- Patients ----------
+
+    // GET all patients
     if ($method === 'GET' && $url === '/api/patients') {
-        authMiddleware();
+         $role = authMiddleware(); 
+    
+        if($role === 'user') {
+            $authController->unAuthorized();
+            return true;
+        }
         $patientController->getPatients();
         return true;
     }
 
-    if ($method === 'POST' && $url === '/api/patients') {
+    if ($method === 'GET' && preg_match('#^/api/patients/(\d+)$#', $url, $matches)) {
         authMiddleware();
+        $id = (int)$matches[1];
+        $patientController->getPatientById($id);
+        return true;
+    }
+
+    if ($method === 'POST' && $url === '/api/patients') {
+        $role = authMiddleware(); 
+    
+        if($role === 'user') {
+            $authController->unAuthorized();
+            return true;
+        }
 
         $patientController->createPatient(
             trim($body['name'] ?? ''),
@@ -53,6 +80,29 @@ function dispatch(PDO $pdo): bool
 
         return true;
     }
+    if ($method === 'PUT' && preg_match('#^/api/patients/(\d+)$#', $url, $matches)) {
+         $role = authMiddleware(); 
+    
+        if($role === 'user') {
+            $authController->unAuthorized();
+            return true;
+        }
+        $id = (int)$matches[1];
+        $patientController->updatePatient($id, $body);
+         exit;
+        }
+
+     if ($method === 'DELETE' && preg_match('#^/api/patients/(\d+)$#', $url, $matches)) {
+        $role = authMiddleware(); 
+    
+        if($role === 'user') {
+            $authController->unAuthorized();
+            return true;
+        }
+        $id = (int)$matches[1];
+        $patientController->deletePatient($id);
+         exit;
+        }
 
     return false; // not matched
 }

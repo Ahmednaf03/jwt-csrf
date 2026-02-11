@@ -1,14 +1,17 @@
 <?php
 
 require_once __DIR__ . '/../helpers/JWT.php'; // where validateJWT() lives
+require_once __DIR__ . '/../helpers/Helper.php';
+require_once __DIR__ . '/../core/Database.php';
+
 
 function authMiddleware(){
     header('Content-Type: application/json; charset=UTF-8');
-
+    $helper = new Helper(Database::connect());
     // Read Authorization header
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
-
+    // cehck for header presence
     if (!$authHeader) {
         http_response_code(401);
         echo json_encode(['error' => 'Authorization header missing']);
@@ -33,7 +36,16 @@ function authMiddleware(){
         exit;
     }
 
+    if ($payload === "invalid credentials") {
+        http_response_code(401);
+        echo json_encode(['error' => 'Invalid email or password']);
+        exit;
+    }
+
     // 4. Attach user data to request
     $_REQUEST['user'] = $payload;
+    $role = $helper->getRole($payload['user_id']);
+
+    return $role['role'];
 }
 ?>

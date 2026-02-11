@@ -1,4 +1,5 @@
 <?php
+// debug purpose
 $_REQUEST['body']['__debug'] = 'middleware ran';
 
 function jsonMiddleware(){
