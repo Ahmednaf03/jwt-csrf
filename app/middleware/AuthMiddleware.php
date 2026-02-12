@@ -4,13 +4,37 @@ require_once __DIR__ . '/../helpers/JWT.php'; // where validateJWT() lives
 require_once __DIR__ . '/../helpers/Helper.php';
 require_once __DIR__ . '/../core/Database.php';
 
-
+session_start();
 function authMiddleware(){
     header('Content-Type: application/json; charset=UTF-8');
     $helper = new Helper(Database::connect());
     // Read Authorization header
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+    $csrfToken = $headers['X-CSRF-TOKEN'] ?? null;
+    $method = $_SERVER['REQUEST_METHOD'];
+
+        if(!$csrfToken){
+            http_response_code(401);
+            echo json_encode(['error' => 'CSRF token is missing']);
+            exit;
+        }
+        if(!hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+        http_response_code(401);
+        echo json_encode(['error' => 'CSRF token mismatch']);
+        exit;
+    }
+// this one for only write endpoints 
+    // if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+    //     if(!hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+    //     http_response_code(401);
+    //     echo json_encode(['error' => 'CSRF token mismatch']);
+    //     exit;
+    // }
+    //     }
+
+
+    
     // cehck for header presence
     if (!$authHeader) {
         http_response_code(401);
@@ -41,10 +65,12 @@ function authMiddleware(){
         echo json_encode(['error' => 'Invalid email or password']);
         exit;
     }
+    
 
     // 4. Attach user data to request
     $_REQUEST['user'] = $payload;
     $user = $helper->getRoleAndId($payload['user_id']);
+
 
     return $user;
 }

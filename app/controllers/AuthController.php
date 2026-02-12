@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/JWT.php';
+
 class AuthController {
 
  private User $userModel;
@@ -24,10 +25,14 @@ class AuthController {
             errorResponse('Invalid email or password', 401);
             return;
         }
-
+            $csrfToken = bin2hex(random_bytes(32));
+        if(session_status() == PHP_SESSION_NONE){
+            session_start();
+        }
+        $_SESSION['csrf_token'] = $csrfToken;
         // Generate JWT
         $token = generateToken($user["id"], $user["email"]);
-        successResponse(['token' => $token], 'Login successful', 200);
+        successResponse(['token' => $token,'csrf_token'=>$csrfToken], 'Login successful', 200);
 
         // update refresh token right away after login 
         $refreshToken = bin2hex(random_bytes(64));
@@ -40,6 +45,7 @@ class AuthController {
         // insert into refresh_token table
         $this->userModel->insertRefreshToken($user['id'], $refreshTokenHash, $refreshExpiry);
         //set in cookie for generating new access tokens later
+
         setcookie(
     'refresh_token',
     $refreshTokenHash,
