@@ -31,17 +31,18 @@ class AuthController {
 
         // update refresh token right away after login 
         $refreshToken = bin2hex(random_bytes(64));
-        $refreshTokenHash = hash('sha256', $refreshToken);
+        $refreshTokenHash = password_hash($refreshToken, PASSWORD_DEFAULT);
 
             $refreshExpiry = date(
             'Y-m-d H:i:s',
              time() + (60 * 60 * 24 * 7) // 7 days
                 );
-
-        $this->userModel->updateRefreshToken($user['id'], $refreshTokenHash, $refreshExpiry);
+        // insert into refresh_token table
+        $this->userModel->insertRefreshToken($user['id'], $refreshTokenHash, $refreshExpiry);
+        //set in cookie for generating new access tokens later
         setcookie(
     'refresh_token',
-    $refreshToken,
+    $refreshTokenHash,
     [
         'expires'  => time() + (60 * 60 * 24 * 7), // 7 days validity 
         'path'     => '/',
@@ -56,15 +57,16 @@ class AuthController {
 
 
 public function refresh(){
+    //check cookie for refresh token
     if (!isset($_COOKIE['refresh_token'])) {
         errorResponse('Refresh token missing', 401);
     }
 
     $refreshToken = $_COOKIE['refresh_token'];
-    $hashed = hash('sha256', $refreshToken);
+    // $hashed = hash('sha256', $refreshToken);
 
     $stmt = $this->userModel->getUserByRefreshToken(
-        $hashed
+        $refreshToken
     );
 
     $user = $stmt;
@@ -73,12 +75,12 @@ public function refresh(){
         errorResponse('Invalid refresh token', 401);
     }
 
-    if (strtotime($user['refresh_token_expires_at']) < time()) {
+    if (strtotime($user['expires_at']) < time()) {
         errorResponse('Refresh token expired', 401);
     }
 
     // Issue NEW access token
-    $accessToken = generateToken($user["id"], $user["email"]);
+    $accessToken = generateToken($user["user_id"], $user["email"]);
 
     successResponse([
         'access_token' => $accessToken,
@@ -96,11 +98,12 @@ $newExpiry = date(
     time() + (60 * 60 * 24 * 7)
 );
 
-$stmt = $this->userModel->refreshRotation($user['id'], $newRefreshToken, $newExpiry);
+// update the refresh token
+$stmt = $this->userModel->refreshRotation($user['refresh_id'], $newHash, $newExpiry);
 
 setcookie(
     'refresh_token',
-    $newRefreshToken,
+    $newHash,
     [
         'expires' => time() + (60 * 60 * 24 * 7),
         'path' => '/',
@@ -109,6 +112,10 @@ setcookie(
         'samesite' => 'Strict'
     ]
 );
+
+
+
+
 
 }
 

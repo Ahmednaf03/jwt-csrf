@@ -2,7 +2,7 @@
 
 function generateToken($id,$email){
 $iat = time(); 
-$exp = $iat + (60 * 5 ); // 5 minutes
+$exp = $iat + (25); // 5 minutes
 $secret = $_ENV['JWT_SECRET'];
 // payload in associative array
 $payload = [

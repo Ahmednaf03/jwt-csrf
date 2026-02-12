@@ -57,7 +57,7 @@ function dispatch(PDO $pdo): bool{
 
     if ($method === 'GET' && preg_match('#^/api/patients/(\d+)$#', $url, $matches)) {
        $user = authMiddleware();
-    
+        // if user fetch based on id from token
         if($user['role'] === 'user') {
              $patientController->getPatientById($user['id']);
              return true;
